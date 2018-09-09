@@ -1,0 +1,61 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    
+    "variables": {
+        "prefix":"vm",
+        "alertDescription" : "AutoScale Alert",
+        "minimum_scale":"1",
+        "maximum_scale":"1",
+        "alertName":  "vmscalealert",
+        "alertSeverity":3,
+        "isEnabled": true,
+        "resourceId": "/subscriptions/0d2f1119-530d-4547-917e-ad9024059695/resourceGroups/clivm/providers/Microsoft.Compute/virtualMachines/vm-",
+        "metricName": "Percentage CPU",
+        "windowSize":"PT5M",
+        "evaluationFrequency":  "PT1M",
+        "operator":  "GreaterThan",
+        "threshold": "5",
+        "timeAggregation": "Average",
+        "actionGroupId":  "/subscriptions/0d2f1119-530d-4547-917e-ad9024059695/resourceGroups/automation/providers/microsoft.insights/actionGroups/StartVMDynamicRunbook"
+    },
+    "resources": [
+        {
+            "name": "[concat(variables('alertName'),padLeft(copyIndex('metricsAlerts',1),3,'0'))]",
+            "type": "Microsoft.Insights/metricAlerts",
+            "location": "global",
+            "apiVersion": "2018-03-01",
+            "tags": {},
+            "properties": {
+                "description": "[variables('alertDescription')]",
+                "severity": "[variables('alertSeverity')]",
+                "enabled": "[variables('isEnabled')]",
+                "scopes": ["[concat(variables('resourceId'),padLeft(copyIndex('metricsAlerts',1),3,'0'))]"],
+                "evaluationFrequency":"[variables('evaluationFrequency')]",
+                "windowSize": "[variables('windowSize')]",
+                "criteria": {
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                    "allOf": [
+                        {
+                            "name" : "1st criterion",
+                            "metricName": "[variables('metricName')]",
+                            "dimensions":[],   
+                            "operator": "[variables('operator')]",
+                            "threshold" : "[variables('threshold')]",
+                            "timeAggregation": "[variables('timeAggregation')]"
+                        }
+                    ]
+                },
+                "actions": [
+                    {
+                        "actionGroupId": "[variables('actionGroupId')]"                
+                    }
+                ]
+            },
+            "copy": {
+                "name": "metricsAlerts",
+                "count": 1
+            }
+        }
+    ]    
+}

@@ -1,0 +1,145 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion":"1.0.0.0",
+    "variables":{
+    "vmUserName": "linuxadmin",
+    "vmPassword": "L!nux@201801010000"
+},
+"resources":[
+    {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[toLower('ameetkubuntu002storage')]",
+        "apiVersion": "2015-06-15",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "ameetkubuntu002 Storage Account"
+        },
+        "properties": {
+            "accountType": "Standard_LRS"
+        }
+    },
+    {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/publicIPAddresses",
+        "name": "[concat(copyIndex(),'ameetkubuntu002-PublicIP')]",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "PublicIPAddress"
+        },
+        "properties": {
+            "publicIPAllocationMethod": "Dynamic",
+            "dnsSettings": {
+                "domainNameLabel": "[concat('ameetkubuntu002',copyIndex())]"
+            }
+        },
+        "copy": {
+            "name": "publicIP",
+            "count": 2
+        }
+    },
+    {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/virtualNetworks",
+        "name": "ameetkubuntu002-VirtualNetwork",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "VirtualNetwork"
+        },
+        "properties": {
+            "addressSpace": {
+                "addressPrefixes": [
+                    "10.0.0.0/16"
+                ]
+            },
+            "subnets": [
+                {
+                    "name": "ameetkubuntu002-VirtualNetwork-Subnet",
+                    "properties": {
+                        "addressPrefix": "10.0.0.0/24"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/networkInterfaces",
+        "name": "[concat(copyIndex(),'ameetkubuntu002-NetworkInterface')]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+            "[concat('Microsoft.Network/publicIPAddresses/',copyIndex(),'ameetkubuntu002-PublicIP')]",
+            "Microsoft.Network/virtualNetworks/ameetkubuntu002-VirtualNetwork"
+        ],
+        "tags": {
+            "displayName": "[concat(copyIndex(),'ameetkubuntu002-NetworkInterface')]"
+        },
+        "properties": {
+            "ipConfigurations": [
+                {
+                    "name": "ipconfig1",
+                    "properties": {
+                        "privateIPAllocationMethod": "Dynamic",
+                        "publicIPAddress": {
+                            "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(copyIndex(),'ameetkubuntu002-PublicIP'))]"
+                        },
+                        "subnet": {
+                            "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', 'ameetkubuntu002-VirtualNetwork'), '/subnets/ameetkubuntu002-VirtualNetwork-Subnet')]"
+                        }
+                    }
+                }
+            ]
+        },
+        "copy": {
+            "name": "networkInterface",
+            "count": 2
+        }
+    },
+    {
+        "apiVersion": "2017-03-30",
+        "type": "Microsoft.Compute/virtualMachines",
+        "name": "[concat(copyIndex(), 'ameetkubuntu002')]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+            "[concat('Microsoft.Storage/storageAccounts/', toLower('ameetkubuntu002storage'))]",
+            "[concat('Microsoft.Network/networkInterfaces/',copyIndex(), 'ameetkubuntu002-NetworkInterface')]"
+        ],
+        "tags": {
+            "displayName": "[concat(copyIndex(),'ameetkubuntu002')]"
+        },
+        "properties": {
+            "hardwareProfile": {
+                "vmSize": "Standard_D2_V3"
+            },
+            "osProfile": {
+                "computerName": "[concat(copyIndex(),'ameetkubuntu002')]",
+                "adminUsername": "[variables('vmUserName')]",
+                "adminPassword": "[variables('vmPassword')]"
+            },
+            "storageProfile": {
+                "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "16.04-LTS",
+                    "version": "latest"
+                },
+                "osDisk": {
+                    "name": "[concat(copyIndex(),'ameetkubuntu002-OSDisk')]",
+                    "caching": "ReadWrite",
+                    "createOption": "FromImage"
+                }
+            },
+            "networkProfile": {
+                "networkInterfaces": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(copyIndex(),'ameetkubuntu002-NetworkInterface'))]"
+                    }
+                ]
+            }
+        },
+        "copy": {
+            "name": "virtualMachine",
+            "count": 2
+        }
+    }
+]
+}
