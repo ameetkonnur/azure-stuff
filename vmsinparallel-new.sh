@@ -1,26 +1,26 @@
 #!/bin/bash
 # set parameters
-avsetname="testav"
+avsetname="testavcentralindia"
 group_name="testrgcentralindia"
 vm_prefix="testvm"
 dc_location="centralindia"
 image_name="Canonical:UbuntuServer:16.04-LTS:latest"
-vm_size="Standard_D2V3"
-vnet_name="/subscriptions/0d2f1119-530d-4547-917e-ad9024059695/resourceGroups/clivm/providers/Microsoft.Network/virtualNetworks/vm-vnet" #full resourcename
-subnet_name="/subscriptions/0d2f1119-530d-4547-917e-ad9024059695/resourceGroups/clivm/providers/Microsoft.Network/virtualNetworks/vm-vnet/subnets/default" #full resourcename
+vm_size="Standard_D2_v3"
+vnet_name="/subscriptions/<subscriptionid>/resourceGroups/<rgname>/providers/Microsoft.Network/virtualNetworks/<vnetname>" # full subnet resourcename if existing else just name
+subnet_name="/subscriptions/<subscriptionid>/resourceGroups/<rgname>/providers/Microsoft.Network/virtualNetworks/<vnetname>/subnets/<subnetname>" # full subnet resourcename if existing else just name
 vm_username="linuxadmin"
-vm_passsword="T3st@12345678"
+vm_passsword="s0mep@sswordwith123"
 # optional random 12 character password
 # vm_passsword=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)
 # create resourcegroup
-# az group create -n $group_name -l $dc_location
+az group create -n $group_name -l $dc_location
 # create av set name
-# az vm availability-set create -n $avsetname -g $group_name --platform-fault-domain-count 2 --platform-update-domain-count 2
+az vm availability-set create -n $avsetname -g $group_name --platform-fault-domain-count 2 --platform-update-domain-count 2
 set -i no_of_vm
 set -i batch_size
 set -i no_of_runs
 set -i vms_created
-no_of_vm=2
+no_of_vm=1
 batch_size=1
 val=`expr $no_of_vm % $batch_size`
 if [ $val == 0 ] ; then
@@ -30,9 +30,6 @@ else
 fi
 echo "no of runs $no_of_runs"
 vms_created=0
-# create resource group
-echo "creating resource group"
-# az group create --name $group_name --location $dc_location
 # create vms in parallel
 for ((i=1; i<=$no_of_runs;i++))
 do
@@ -52,7 +49,6 @@ do
             --authentication-type password \
             --admin-username $vm_username \
             --admin-password $vm_passsword \
-            --vnet-name $vnet_name \
             --subnet $subnet_name \
             --availability-set $avsetname
     done
